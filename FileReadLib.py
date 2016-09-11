@@ -18,9 +18,8 @@ def txt_to_npy(filename):
 
     raw_lines = [x[:-1].split(" ") for x in file_array.readlines()]
 
-    n_nodes = int(raw_lines[0])
     edges = np.array([(int(x),int(y), int(z)) for x, y, z in raw_lines[1:]])
 
     file_array.close()
-    np.save(filename, [n_nodes, jobs])
+    np.save(filename, edges)
 
