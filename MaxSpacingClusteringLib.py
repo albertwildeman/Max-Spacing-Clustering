@@ -55,11 +55,24 @@ def max_spacing_clustering_expl(edges, k):
 
 def max_spacing_clustering_impl(nodes, spacing):
 
+
+    # remove duplicates from list of nodes
+    nodes = np.unique(nodes)
+
     # Get number of nodes
     n_nodes = len(nodes)
 
     # Initialize number of clusters to number of nodes
     n_clusters = n_nodes
+
+    # get number of bits
+    n_bits = int(np.ceil((np.log2(max(nodes)))))
+
+    # Create a numpy array to hold, for each possible value (converted to int) of a node, what the index of that
+    # node is in "nodes" (or multiple).
+    node_indices = [[] for x in range(2**n_bits)]
+    for i_node in range(n_nodes):
+        node_indices[nodes[i_node]].append(i_node)
 
     # Initialize Union-Find to hold clustering information
     uf = UnionFind(n_nodes)
@@ -69,14 +82,27 @@ def max_spacing_clustering_impl(nodes, spacing):
 
     for edge_length in range(1, spacing):
         for i_node_a in range(n_nodes):
-            print("working on node #" + str(i_node_a))
-            for i_node_b in range(i_node_a+1, n_nodes):
 
-                # if node a and b differ by edge_length...
-                if bin(nodes[i_node_a]^nodes[i_node_b]).count("1") == edge_length:
+            if i_node_a%1000==0:
+                print("working on node #" + str(i_node_a))
 
-                    if uf.find(i_node_a) != uf.find(i_node_b):  # if adding this edge would not create a cycle, add it
+            if edge_length == 1:
+                for i_bit_to_flip_1 in range(n_bits):
+                    node_b = nodes[i_node_a] ^ (1 << i_bit_to_flip_1)
+                    for i_node_b in node_indices[node_b]:
+                        if uf.find(i_node_a) != uf.find(i_node_b):  # if adding this edge would not create a cycle,
                             uf.union(i_node_a, i_node_b)
                             n_clusters -= 1
+
+            if edge_length == 2:
+                for i_bit_to_flip_1 in range(n_bits):
+                    for i_bit_to_flip_2 in [i for i in range(n_bits) if i!=i_bit_to_flip_1]:
+                        node_b = nodes[i_node_a] ^ ( (1 << i_bit_to_flip_1) ^ (1 << i_bit_to_flip_2))
+
+                        for i_node_b in node_indices[node_b]:
+                            if i_node_b > -1:  # if this node exists
+                                if uf.find(i_node_a) != uf.find(i_node_b):  # if adding this edge would not create a cycle,
+                                    uf.union(i_node_a, i_node_b)
+                                    n_clusters -= 1
 
     return n_clusters
